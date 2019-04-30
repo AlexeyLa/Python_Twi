@@ -29,3 +29,7 @@ def get_correct_link(url):
         corrected_url = 'https://' + url[start:] 
     return corrected_url
 
+#def get_tweets(url):
+    
+    
+    
