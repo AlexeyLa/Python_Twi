@@ -18,7 +18,29 @@ def get_twitter_link(url):
     if (len(table)!=0):
         return table[0].get('href')
     else:
+        print('None found')
         return None
+    
+def get_twitter_link_test(url):
+    req = urllib.request.Request(url)
+    response = urllib.request.urlopen(req)
+    ms = bs(response.read())
+    table = ms.find_all(lambda tag: bool(tag.get('href')) and 'twitter.com' in tag.get('href'))
+    if (len(table)!=0):
+        print('main page twitter')
+        return table[0].get('href')
+    else:
+        if url[-1]!='/':
+            url+='/'
+        req = urllib.request.Request(url + 'contact')
+        response = urllib.request.urlopen(req)
+        ms = bs(response.read())
+        table = ms.find_all(lambda tag: bool(tag.get('href')) and 'twitter.com' in tag.get('href'))
+        if (len(table)!=0):
+            print("contact twitter")
+            return table[0].get('href')
+        else:
+            return None
 
 def get_correct_link(url):    
     start = re.search(r'twitter.com/',url).start()   
@@ -29,7 +51,30 @@ def get_correct_link(url):
         corrected_url = 'https://' + url[start:] 
     return corrected_url
 
-#def get_tweets(url):
+def ref2acc(ref):
+    if (ref!=None) and ((len(ref.split('twitter.com/',1))!=1)):
+        tw_acc  = ref.split('twitter.com/',1)
+        if len(tw_acc)!=1:
+            result = '@' + tw_acc[1]
+            return re.split('[!#$/?]', result)[0]
+    else: return None
+        
+def load_and_save_tweets(api, username, tweets_count):
+    uploaded = open(username[1:] + '.txt','w')
+    tweets_list = []
+    for tweet_info in api.user_timeline(screen_name=username, tweet_mode = 'extended', count=tweets_count):
+        if ('retweeted_status' in dir(tweet_info)):
+            tweet=tweet_info.retweeted_status.full_text
+        else:
+            tweet=tweet_info.full_text
+        tweet = (tweet.split('https://',1)[0]).replace('\n','')
+        tweets_list.append(tweet + '\n')
+    for i in tweets_list:
+        mystring = re.sub(r'[^\x00-\x7f]',r'', i) 
+        uploaded.write("count: " + str(tweets_list.index(i)) + " TW: "+ mystring)
+    uploaded.close()
+        
+
     
     
     

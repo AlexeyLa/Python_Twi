@@ -63,7 +63,7 @@ twitter_list = []
 #for k in range(0,10):
 for k in range(0,len(links_list)):
     print(k)
-    twitter_list.append(parsing_tools.get_twitter_link(links_list[k]))
+    twitter_list.append(parsing_tools.get_twitter_link_test(links_list[k]))
 
 # calculate amount of incorrectly processed entitites
     
@@ -74,19 +74,53 @@ print('efficiency: ', efficiency)
 # get list of indices fith fault results
 
 #indices = []
-indices = [i for i,v in enumerate(twitter_list) if type(v) != str]
+indices = [i for i,v in enumerate(twitter_list) if type(v) != str]      
+    
+# save obtained twitter acc list
 
-# correct twitter links
+pickle_out = open("twitter_list.pickle","wb")
+pickle.dump(twitter_list, pickle_out)
+pickle_out.close()
 
-twitter_list_correct = []
-counter = 0
-for m in twitter_list:
-    print(counter)
-    if (m==None):
-        twitter_list_correct.append(m)
-    else:
-        print(type(m))
-        twitter_list_correct.append(parsing_tools.get_correct_link(m))
-        print("correct")
-    counter+=1   
-        
+# load twitter acc list
+
+pickle_in = open("twitter_list.pickle","rb")
+twitter_list = pickle.load(pickle_in)
+
+# convert twitter link to accounts
+                 
+twitter_acc = [parsing_tools.ref2acc(i) for i in twitter_list]
+
+# create txt files with text from tweets
+
+import tweepy
+from tweepy import OAuthHandler
+import twitter
+import re
+
+consumer_key='tuuPxYC2QYqMqCor41TuLlEWV'
+consumer_secret='NMeqN2w0KhnkbT4CFk3ef3Oi7SR1NlfLfQV3OnQtUwkd8czam0'
+access_token_key='2809175323-8rlwmRgpkYed0E9Lb36V7VxoIlBaULlUyAJtdNA'
+access_token_secret='LbwpuZZWpxichjGXJS3TmBYLY2COyofjnb2KyrOj2b02h'
+
+auth = OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token_key, access_token_secret)
+api = tweepy.API(auth)
+
+tw_count = 50
+for i in range(0, 8):
+    parsing_tools.load_and_save_tweets(api, twitter_acc[i], tw_count)
+    
+# get list of twits from file
+
+user_twits = []    
+loaded = open(twitter_acc[0][1:] + '.txt','r')
+f = loaded.readlines()
+for i in f:
+    user_twits.append(i)
+loaded.close()
+
+
+
+
+
