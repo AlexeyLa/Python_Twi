@@ -9,6 +9,9 @@ import urllib.parse
 import urllib.request
 from bs4 import BeautifulSoup as bs
 import re
+#import sys
+import tweepy
+#import urllib2
 
 def get_twitter_link(url):
     req = urllib.request.Request(url)
@@ -55,26 +58,41 @@ def ref2acc(ref):
     if (ref!=None) and ((len(ref.split('twitter.com/',1))!=1)):
         tw_acc  = ref.split('twitter.com/',1)
         if len(tw_acc)!=1:
-            result = '@' + tw_acc[1]
+            result = tw_acc[1]
+            result = result.replace('@','')
             return re.split('[!#$/?]', result)[0]
     else: return None
         
-def load_and_save_tweets(api, username, tweets_count):
-    uploaded = open(username[1:] + '.txt','w')
-    tweets_list = []
-    for tweet_info in api.user_timeline(screen_name=username, tweet_mode = 'extended', count=tweets_count):
-        if ('retweeted_status' in dir(tweet_info)):
-            tweet=tweet_info.retweeted_status.full_text
-        else:
-            tweet=tweet_info.full_text
-        tweet = (tweet.split('https://',1)[0]).replace('\n','')
-        tweets_list.append(tweet + '\n')
-    for i in tweets_list:
-        mystring = re.sub(r'[^\x00-\x7f]',r'', i) 
-        uploaded.write("count: " + str(tweets_list.index(i)) + " TW: "+ mystring)
-    uploaded.close()
+def load_and_save_tweets(api, username, tweets_count, folder):
+    uploaded = open(folder + username + '.txt','w')
+    print('done')
+    print(username)
+    try:    
+        tweets_list = []
+        for tweet_info in api.user_timeline(screen_name=username, tweet_mode = 'extended', count=tweets_count):
+            if ('retweeted_status' in dir(tweet_info)):
+                tweet=tweet_info.retweeted_status.full_text
+            else:
+                tweet=tweet_info.full_text
+            tweet = (tweet.split('https://',1)[0]).replace('\n','')
+            tweets_list.append(tweet + '\n')
+        for i in tweets_list:
+            mystring = re.sub(r'[^\x00-\x7f]',r'', i) 
+            uploaded.write(mystring)
+    except tweepy.TweepError:
+        uploaded.close()
         
-
+#def check_status(username):
+#    url = 'http://api.twitter.com/1/users/show.json?id=%s'
+#    try:
+#        request = urllib2.urlopen(url)
+#        status = request.code
+#        data = request.read()
+#    except urllib2.HTTPError, e:
+#        status = e.code
+#    data = e.read()
+    
+    
     
     
     

@@ -6,11 +6,18 @@ Created on Wed Feb 13 15:36:07 2019
 """
 
 # parse html url
+import sys
+import os
+
+path = 'C:\\Users\\a.lantsov\\Desktop\\PYTHON\\'
+sys.path.insert(0,path + 'Twitter_data\\')
+sys.path.insert(0,path + 'Python_Twi\\')
+os.chdir(path + 'Python_Twi\\')
+
 import urllib.parse
 import urllib.request
 from bs4 import BeautifulSoup as bs
-import re
-import pandas as pd
+#import re
 import parsing_tools
 import pickle
 
@@ -90,37 +97,112 @@ twitter_list = pickle.load(pickle_in)
 # convert twitter link to accounts
                  
 twitter_acc = [parsing_tools.ref2acc(i) for i in twitter_list]
+twitter_acc = [i for i in twitter_acc if i is not None]
 
 # create txt files with text from tweets
 
 import tweepy
 from tweepy import OAuthHandler
-import twitter
-import re
+import twitter_credentials
 
-consumer_key='tuuPxYC2QYqMqCor41TuLlEWV'
-consumer_secret='NMeqN2w0KhnkbT4CFk3ef3Oi7SR1NlfLfQV3OnQtUwkd8czam0'
-access_token_key='2809175323-8rlwmRgpkYed0E9Lb36V7VxoIlBaULlUyAJtdNA'
-access_token_secret='LbwpuZZWpxichjGXJS3TmBYLY2COyofjnb2KyrOj2b02h'
+acc = twitter_credentials.crds()
+
+consumer_key = acc.consumer_key
+consumer_secret = acc.consumer_secret
+access_token_key = acc.access_token_key
+access_token_secret = acc.access_token_secret
 
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token_key, access_token_secret)
 api = tweepy.API(auth)
 
-tw_count = 50
-for i in range(0, 8):
-    parsing_tools.load_and_save_tweets(api, twitter_acc[i], tw_count)
+folder = 'C:/Users/a.lantsov/Desktop/PYTHON/Acquired_data/'
+
+tw_count = 1000
+#for i in range(0, 10):
+count = 0
+for i in twitter_acc:
+    count+=1
+    print(count)
+    parsing_tools.load_and_save_tweets(api, i, tw_count, folder)
     
 # get list of twits from file
 
-user_twits = []    
-loaded = open(twitter_acc[0][1:] + '.txt','r')
-f = loaded.readlines()
-for i in f:
-    user_twits.append(i)
-loaded.close()
+user_twits = {}
+for j in twitter_acc:
+    loaded = open(folder + j + '.txt','r')
+    f = loaded.readlines()
+    twits = []
+    for i in f:
+        twits.append(i)
+    loaded.close()
+    user_twits[j] = twits
 
+# start Named Entity Recognition with obtained twits (NLTK + SpaCy)
 
+import nltk
+nltk.download()
+nltk.download('averaged_perceptron_tagger')
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
 
+def preprocess(sent):
+    sent = nltk.word_tokenize(sent)
+    sent = nltk.pos_tag(sent)
+    return sent
+
+interim = preprocess(user_twits[1])
+
+analysis_res = []
+for i in user_twits:
+    analysis_res.append(preprocess(i))
+
+# let's use spacy which was trained upon OntoNotes5 corpus
+
+import spacy
+from spacy import displacy
+from collections import Counter
+import en_core_web_sm
+nlp = en_core_web_sm.load()
+
+full_analysis = []
+full_labels = []
+labels = []
+items = []
+
+user_analysis = {}
+
+for key, value in user_twits.items(): 
+    geotag_list = []
+    for i in value:
+        doc = nlp(i)
+        for X in doc.ents:
+            if (X.label_ == 'GPE'):
+                geotag_list.append(X.text)
+    user_analysis[key] = geotag_list
+                
+ven_counter = {}
+
+for key, value in user_twits.items():
+    counter = 0
+    for i in value:
+        if 'Venezuela' in i:
+            counter+=1               
+    ven_counter[key] = counter
+
+# sort dictionary
+    
+import operator
+
+sorted_x = sorted(ven_counter.items(), key = operator.itemgetter(1))
+                    
+#    full_analysis.append([(X.text, X.label_) for X in doc.ents])
+#    full_labels.append([X.label_ for X in doc.ents])
+#    items+=[X.text for X in doc.ents]
+#    labels+=[X.label_ for X in doc.ents]
+#result_labels = Counter(labels).most_common(10)
+#result_items = Counter(items).most_common(10)
+
+# analyzed full set of twitter accounts
 
 
